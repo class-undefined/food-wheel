@@ -198,6 +198,86 @@ def fallback_fingerprint(ip: str, user_agent: str, fingerprint: Optional[str]) -
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
 
 
+def infer_device(user_agent: str) -> Dict[str, str]:
+    ua = user_agent or ""
+    ua_lower = ua.lower()
+
+    if "iphone" in ua_lower:
+        device_type = "手机"
+        os_name = "iOS"
+        brand = "Apple"
+        model = "iPhone"
+    elif "ipad" in ua_lower or ("macintosh" in ua_lower and "mobile" in ua_lower):
+        device_type = "平板"
+        os_name = "iPadOS"
+        brand = "Apple"
+        model = "iPad"
+    elif "android" in ua_lower:
+        device_type = "手机" if "mobile" in ua_lower else "平板"
+        os_name = "Android"
+        brand = "Android"
+        model_match = re.search(r"Android [^;]+;\s*([^;)]+)", ua)
+        model = model_match.group(1).strip() if model_match else "Android 设备"
+        vendor_map = {
+            "huawei": "Huawei",
+            "honor": "Honor",
+            "xiaomi": "Xiaomi",
+            "redmi": "Redmi",
+            "oppo": "OPPO",
+            "vivo": "vivo",
+            "samsung": "Samsung",
+            "pixel": "Google",
+            "oneplus": "OnePlus",
+        }
+        lowered_model = model.lower()
+        for key, value in vendor_map.items():
+            if key in lowered_model:
+                brand = value
+                break
+    elif "macintosh" in ua_lower or "mac os x" in ua_lower:
+        device_type = "电脑"
+        os_name = "macOS"
+        brand = "Apple"
+        model = "Mac"
+    elif "windows" in ua_lower:
+        device_type = "电脑"
+        os_name = "Windows"
+        brand = "PC"
+        model = "Windows 设备"
+    elif "linux" in ua_lower:
+        device_type = "电脑"
+        os_name = "Linux"
+        brand = "PC"
+        model = "Linux 设备"
+    else:
+        device_type = "未知设备"
+        os_name = "未知系统"
+        brand = "未知品牌"
+        model = "未知型号"
+
+    if "edg/" in ua_lower:
+        browser = "Edge"
+    elif "opr/" in ua_lower or "opera" in ua_lower:
+        browser = "Opera"
+    elif "firefox/" in ua_lower:
+        browser = "Firefox"
+    elif "crios/" in ua_lower or "chrome/" in ua_lower:
+        browser = "Chrome"
+    elif "safari/" in ua_lower:
+        browser = "Safari"
+    else:
+        browser = "未知浏览器"
+
+    return {
+        "brand": brand,
+        "model": model,
+        "type": device_type,
+        "os": os_name,
+        "browser": browser,
+        "label": f"{brand} {model} · {device_type} · {browser}",
+    }
+
+
 def visitor_payload(visitor: Visitor) -> Dict[str, Any]:
     return {
         "client_id": visitor.client_id,
@@ -206,6 +286,7 @@ def visitor_payload(visitor: Visitor) -> Dict[str, Any]:
         "ip": visitor.ip,
         "mac": visitor.mac,
         "user_agent": visitor.user_agent,
+        "device": infer_device(visitor.user_agent),
         "timezone": visitor.timezone,
         "screen": visitor.screen,
         "online": visitor.online,
@@ -227,7 +308,11 @@ def room_payload(room: RoomState) -> Dict[str, Any]:
         "final_result": room.final_result,
         "scores": room.scores,
         "history": room.history,
-        "visitors": [visitor_payload(v) for v in sorted(room.visitors.values(), key=lambda item: item.last_seen, reverse=True)],
+        "visitors": [
+            visitor_payload(v)
+            for v in sorted(room.visitors.values(), key=lambda item: item.last_seen, reverse=True)
+            if v.online
+        ],
         "online_count": sum(1 for v in room.visitors.values() if v.online),
         "mac_note": "浏览器请求不会携带 MAC；仅同局域网且服务端 ARP/邻居表可见时可能推断。",
         "server_time": time.time(),
@@ -246,6 +331,10 @@ async def broadcast(room: RoomState) -> None:
             disconnected.append(connection)
     for connection in disconnected:
         room.connections.discard(connection)
+        disconnected_client_id = room.connection_clients.pop(id(connection), None)
+        if disconnected_client_id and disconnected_client_id in room.visitors:
+            room.visitors[disconnected_client_id].online = disconnected_client_id in room.connection_clients.values()
+            room.visitors[disconnected_client_id].last_seen = time.time()
 
 
 async def identify_visitor(room: RoomState, request: Request, data: ClientIdentity) -> Visitor:

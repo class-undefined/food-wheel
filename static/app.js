@@ -10,6 +10,7 @@ const state = {
   ws: null,
   selectedStrategy: "single",
   spinning: false,
+  pendingState: null,
   rotation: 0,
 };
 
@@ -129,7 +130,7 @@ function connectWebSocket() {
   state.ws.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "state") {
-      applyState(message.state);
+      handleRealtimeState(message.state);
     }
   });
   state.ws.addEventListener("close", () => {
@@ -224,6 +225,39 @@ function applyState(nextState) {
   }
 }
 
+function handleRealtimeState(nextState) {
+  const currentRound = state.room?.round_no || 0;
+  const hasNewSpin = nextState.round_no > currentRound && nextState.current_result;
+
+  if (!hasNewSpin) {
+    applyState(nextState);
+    return;
+  }
+
+  if (state.spinning) {
+    state.pendingState = nextState;
+    return;
+  }
+
+  playSpinAnimation(nextState);
+}
+
+function playSpinAnimation(nextState) {
+  state.spinning = true;
+  els.spinButton.disabled = true;
+  els.spinButton.querySelector("span").textContent = "转动";
+  animateToResult(nextState.current_result, nextState.options);
+  setTimeout(() => {
+    state.spinning = false;
+    els.spinButton.querySelector("span").textContent = "开转";
+    applyState(nextState);
+    pulseResult();
+    if (nextState.final_result) {
+      toast(`最终决定：${nextState.final_result}`);
+    }
+  }, 2650);
+}
+
 function renderScores(room) {
   const entries = Object.entries(room.scores).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
@@ -240,15 +274,17 @@ function renderScores(room) {
 
 function renderVisitors(visitors) {
   if (!visitors.length) {
-    els.visitorList.innerHTML = `<div class="meta">等待设备加入。</div>`;
+    els.visitorList.innerHTML = `<div class="meta">暂无在线设备。</div>`;
     return;
   }
   els.visitorList.innerHTML = visitors.map((visitor) => {
-    const device = visitor.screen ? `${visitor.screen}` : "未知屏幕";
+    const deviceLabel = visitor.device?.label || "未知设备";
+    const screenInfo = visitor.screen ? ` · ${visitor.screen}` : "";
+    const device = `${deviceLabel}${screenInfo}`;
     const network = visitor.mac ? `${visitor.ip} · ${visitor.mac}` : visitor.ip;
     return `
       <div class="visitor-item">
-        <strong>${visitor.online ? "● " : "○ "}${escapeHtml(visitor.nickname)}</strong>
+        <strong>${escapeHtml(visitor.nickname)}</strong>
         <span class="meta">${escapeHtml(device)}<br>${escapeHtml(network)}</span>
       </div>
     `;
@@ -288,8 +324,8 @@ function pulseResult() {
   );
 }
 
-function animateToResult(result) {
-  const options = state.room.options;
+function animateToResult(result, optionsOverride) {
+  const options = optionsOverride || state.room.options;
   const index = options.indexOf(result);
   const count = Math.max(options.length, 1);
   const slice = 360 / count;
@@ -314,6 +350,7 @@ async function spin() {
       state.spinning = false;
       els.spinButton.querySelector("span").textContent = "开转";
       applyState(data.state);
+      state.pendingState = null;
       pulseResult();
       if (data.state.final_result) {
         toast(`最终决定：${data.state.final_result}`);
