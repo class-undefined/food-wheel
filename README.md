@@ -17,6 +17,17 @@ http://localhost:8000
 
 同一局域网内其他设备访问时，把 `localhost` 换成运行机器的局域网 IP。
 
+## Docker
+
+构建并运行：
+
+```bash
+docker build -t food-wheel .
+docker run --rm -p 8000:8000 food-wheel
+```
+
+容器内服务监听 `0.0.0.0:8000`，宿主机通过 `http://localhost:8000` 访问。
+
 ## 功能
 
 - 默认房间 `default`，也可以在地址中使用 `?room=xxx` 创建不同房间。
