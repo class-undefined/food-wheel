@@ -22,7 +22,14 @@ from pydantic import BaseModel, Field, field_validator
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
 
-DEFAULT_OPTIONS = ["火锅", "烧烤", "麻辣烫", "拉面", "寿司", "汉堡", "粤菜", "轻食"]
+DEFAULT_OPTIONS = [
+    "Wood Garden（三里屯店）",
+    "鸿潮汕广式鸡煲火锅（三里屯店）",
+    "蘇飯",
+    "乾韵打边炉•客家酒馆（三里屯店）",
+    "一楼一饭店•宵夜（三里屯店）",
+    "沿江海南黎家特色菜（三里屯T+MALL店）",
+]
 MAX_OPTIONS = 24
 MAX_HISTORY = 30
 
@@ -52,7 +59,7 @@ class SettingsUpdate(BaseModel):
             text = re.sub(r"\s+", " ", str(item)).strip()
             if not text or text in seen:
                 continue
-            cleaned.append(text[:24])
+            cleaned.append(text[:40])
             seen.add(text)
         if len(cleaned) < 2:
             raise ValueError("至少需要两个可选项")

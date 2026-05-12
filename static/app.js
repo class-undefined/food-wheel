@@ -20,6 +20,7 @@ const els = {
   wheel: document.querySelector("#wheel"),
   spinButton: document.querySelector("#spinButton"),
   currentResult: document.querySelector("#currentResult"),
+  spinOwner: document.querySelector("#spinOwner"),
   resultStrip: document.querySelector("#resultStrip"),
   nicknameInput: document.querySelector("#nicknameInput"),
   saveNickname: document.querySelector("#saveNickname"),
@@ -211,6 +212,7 @@ function applyState(nextState) {
   }
 
   els.currentResult.textContent = nextState.current_result || "待开转";
+  els.spinOwner.textContent = getSpinOwnerText(nextState);
   els.finalResult.textContent = nextState.final_result || "还没有结论";
   els.strategySummary.textContent = `${nextState.strategy_label} · 第 ${nextState.round_no} 轮`;
   els.spinButton.disabled = Boolean(nextState.final_result) || state.spinning;
@@ -279,16 +281,22 @@ function renderVisitors(visitors) {
   }
   els.visitorList.innerHTML = visitors.map((visitor) => {
     const deviceLabel = visitor.device?.label || "未知设备";
-    const screenInfo = visitor.screen ? ` · ${visitor.screen}` : "";
-    const device = `${deviceLabel}${screenInfo}`;
     const network = visitor.mac ? `${visitor.ip} · ${visitor.mac}` : visitor.ip;
     return `
       <div class="visitor-item">
         <strong>${escapeHtml(visitor.nickname)}</strong>
-        <span class="meta">${escapeHtml(device)}<br>${escapeHtml(network)}</span>
+        <span class="meta">${escapeHtml(deviceLabel)}<br>${escapeHtml(network)}</span>
       </div>
     `;
   }).join("");
+}
+
+function getSpinOwnerText(room) {
+  const latest = room.history?.[0];
+  if (!latest) {
+    return "等待开转";
+  }
+  return `由 ${latest.spinner || "匿名用户"} 开转 · 第 ${latest.round} 轮`;
 }
 
 function renderHistory(history) {

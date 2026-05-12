@@ -182,10 +182,23 @@ canvas {
   padding-top: 14px;
 }
 
+.result-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
 .result-strip strong,
 .final-panel strong {
   font-size: clamp(24px, 7vw, 38px);
   line-height: 1.1;
+}
+
+.result-copy span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .control-panel {
@@ -351,13 +364,30 @@ textarea:focus {
   font-size: 13px;
 }
 
+.visitor-item {
+  display: grid;
+  justify-content: stretch;
+  align-items: start;
+  gap: 6px;
+}
+
 .score-item strong,
-.visitor-item strong,
 .history-item strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.visitor-item strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.visitor-item .meta {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
 
 .meta,
