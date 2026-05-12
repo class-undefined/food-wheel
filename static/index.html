@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>今天吃什么转盘</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="房间信息">
+        <div>
+          <p class="eyebrow">联机房间</p>
+          <h1 id="roomTitle">今天吃什么</h1>
+        </div>
+        <div class="connection-pill" id="connectionStatus">连接中</div>
+      </section>
+
+      <section class="hero-grid">
+        <div class="wheel-panel">
+          <div class="wheel-wrap">
+            <canvas id="wheel" width="720" height="720" aria-label="食物转盘"></canvas>
+            <div class="pointer" aria-hidden="true"></div>
+            <button class="spin-button" id="spinButton" type="button">
+              <span>开转</span>
+            </button>
+          </div>
+          <div class="result-strip" id="resultStrip">
+            <span class="label">当前结果</span>
+            <strong id="currentResult">待开转</strong>
+          </div>
+        </div>
+
+        <aside class="control-panel">
+          <div class="profile-row">
+            <label>
+              <span>昵称</span>
+              <input id="nicknameInput" maxlength="18" autocomplete="nickname" placeholder="系统分配中" />
+            </label>
+            <button id="saveNickname" type="button">保存</button>
+          </div>
+
+          <div class="strategy-card">
+            <span class="section-title">策略</span>
+            <div class="segmented" role="group" aria-label="转盘策略">
+              <button data-strategy="single" class="active" type="button">一次</button>
+              <button data-strategy="best_of_3" type="button">三局两胜</button>
+              <button data-strategy="best_of_5" type="button">五局三胜</button>
+              <button data-strategy="first_to" type="button">自定义</button>
+            </div>
+            <label class="target-row" id="targetRow">
+              <span>先赢次数</span>
+              <input id="targetWins" type="number" min="1" max="5" value="2" />
+            </label>
+          </div>
+
+          <div class="options-card">
+            <div class="section-head">
+              <span class="section-title">候选</span>
+              <button id="applySettings" type="button">应用</button>
+            </div>
+            <textarea id="optionsInput" rows="8" spellcheck="false"></textarea>
+          </div>
+
+          <div class="action-row">
+            <button id="resetButton" class="ghost" type="button">重置对局</button>
+            <button id="shareButton" class="ghost" type="button">复制房间链接</button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="status-grid">
+        <article class="info-panel final-panel">
+          <span class="section-title">最终决策</span>
+          <strong id="finalResult">还没有结论</strong>
+          <p id="strategySummary">一次定结果</p>
+        </article>
+
+        <article class="info-panel">
+          <span class="section-title">比分</span>
+          <div id="scoreList" class="score-list"></div>
+        </article>
+
+        <article class="info-panel">
+          <span class="section-title">在线设备</span>
+          <div id="visitorList" class="visitor-list"></div>
+          <p class="hint" id="macNote"></p>
+        </article>
+
+        <article class="info-panel">
+          <span class="section-title">历史</span>
+          <div id="historyList" class="history-list"></div>
+        </article>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
